@@ -55,7 +55,7 @@ Run `steamctl info` first. Its `platform` field (`linux`, `steamdeck`, `windows`
 
 ## Another machine (Steam Deck, Windows PC)
 
-If the user says "on my Deck" or names another PC, run everything over SSH. steamctl needs no install there: `ssh <host> python3 - <command> < steamctl.py`. Setup, screenshots and quirks: [references/remote.md](references/remote.md).
+If the user says "on my Deck" or names another PC, run everything over SSH. On a Deck you can also press dialog buttons yourself (`xdotool key --window`), so don't hand installer clicks to the user. steamctl needs no install there: `ssh <host> python3 - <command> < steamctl.py`. Setup, screenshots and quirks: [references/remote.md](references/remote.md).
 
 ## Rules
 

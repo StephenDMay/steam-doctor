@@ -338,9 +338,31 @@ class Steam:
 
 # ---------------------------------------------------------------- Steam process control
 
+SESSION_VARS = ("DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS",
+                "XDG_SESSION_TYPE", "XDG_CURRENT_DESKTOP", "DESKTOP_SESSION", "SESSION_MANAGER")
+
+
+def desktop_session_env():
+    """Session vars borrowed from a running desktop process (XAUTHORITY can't be guessed)."""
+    for name in ("plasmashell", "kwin_wayland", "gnome-shell", "Hyprland", "sway"):
+        pid = subprocess.run(["pgrep", "-u", str(os.getuid()), "-x", name],
+                             capture_output=True, text=True).stdout.split()
+        if not pid:
+            continue
+        try:
+            with open(f"/proc/{pid[0]}/environ", "rb") as f:
+                pairs = (kv.decode(errors="replace").partition("=") for kv in f.read().split(b"\0") if kv)
+                return {k: v for k, _, v in pairs if k in SESSION_VARS}
+        except OSError:
+            pass
+    return {}
+
+
 def linux_session_env():
     """Fill in display/session vars so GUI commands work from SSH or a bare shell."""
     env = dict(os.environ)
+    if "SSH_CONNECTION" in env:
+        env.update(desktop_session_env())
     run = env.setdefault("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
     if "WAYLAND_DISPLAY" not in env:
         socks = sorted(s for s in glob.glob(os.path.join(run, "wayland-*")) if not s.endswith(".lock"))
@@ -378,7 +400,13 @@ def spawn(cmd):
         subprocess.Popen(cmd, creationflags=0x00000008 | 0x00000200,  # DETACHED_PROCESS | NEW_PROCESS_GROUP
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     else:
-        subprocess.Popen(cmd, env=linux_session_env(), start_new_session=True,
+        env = linux_session_env()
+        if "SSH_CONNECTION" in os.environ and shutil.which("systemd-run"):
+            # SteamOS kills everything in the SSH session's scope on logout, even setsid'd children.
+            # Run under the user's systemd manager instead so Steam outlives this connection.
+            cmd = (["systemd-run", "--user", "--collect", "--quiet"]
+                   + [f"--setenv={k}={env[k]}" for k in SESSION_VARS if k in env] + cmd)
+        subprocess.Popen(cmd, env=env, start_new_session=True,
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
 
 

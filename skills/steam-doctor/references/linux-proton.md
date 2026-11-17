@@ -55,6 +55,9 @@ If protontricks isn't installed, Flatpak works everywhere, including Deck: `flat
 ## 5. Non-Steam games and launchers
 
 - **Add the installer first, then the launcher.** `add Setup.exe --proton proton_experimental`, run it, install. Then point the shortcut at the installed exe inside its prefix (`<steam>/steamapps/compatdata/<appid>/pfx/drive_c/...`). Use `edit-shortcut <installer> --exe <installed launcher> --name <Name>`: the shortcut keeps its appid, so it keeps the prefix with the install in it. Do **not** `remove` + `add`, because a new shortcut gets a new appid and an empty prefix. Make sure a Proton version is forced on it (`set-proton`).
+- **The end state is one shortcut, named for the launcher, pointing at the installed exe.** That's what shows up in the Deck's Game Mode library (under Non-Steam), so the user can start it with no Desktop Mode trip. Remove leftover installer shortcuts once it works.
+- If the installer shortcut is already gone (someone did `remove` + `add`), don't reinstall. Point the new shortcut at the old prefix with launch options: `STEAM_COMPAT_DATA_PATH=<steam>/steamapps/compatdata/<old appid> %command%`.
+- Don't force Proton on a shortcut whose target is a Linux program (`flatpak`, a Lutris `lutris:rungameid/...` URL, a `.sh`). Proton can't run them. Seen in the wild: a "Battle.net" shortcut running `flatpak run net.lutris.Lutris` with Proton Experimental forced, which can never launch. Replace it with a real Proton install.
 - Never wrap system `wine` in a Steam shortcut. Steam injects its overlay and runtime libraries (`LD_PRELOAD`, `LD_LIBRARY_PATH`), and Chromium-based launchers crash on them. Use Proton, or a wrapper script that unsets those first.
 - **Steam says "Running" after the launcher is closed:** the launcher left a background process behind (Battle.net's `Agent.exe`, EA's `EABackgroundService`). Confirm with `show <game>` (`running: true`), then, once the user has quit, `stop-game <game>`. To stop it happening, have the user set the launcher to exit fully on close (Battle.net: Settings → App → "When I close Battle.net" → Exit Battle.net completely).
 - Launchers that run games inside their own prefix (Battle.net, EA app, Ubisoft): the games inherit the launcher's Proton and prefix. Fix the launcher's shortcut, not the game.
@@ -66,6 +69,7 @@ If protontricks isn't installed, Flatpak works everywhere, including Deck: `flat
 - Storage: games on the microSD card show up as an extra library. steamctl reads `libraryfolders.vdf`, so `show` finds them.
 - Per-game performance settings (FPS cap, TDP, scaling) live in the Quick Access menu, not in files. Tell the user where to tap.
 - `steamos-readonly`: leave it on. Everything here works from the home folder.
+- Desktop Mode can block the user's input while a non-Steam Proton app runs. Drive dialogs with `xdotool key --window`, and move logins and play to Game Mode. See [remote.md](remote.md).
 
 ## 7. Last resorts
 

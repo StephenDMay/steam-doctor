@@ -46,8 +46,32 @@ GUI caveat: SSH sessions on Windows run in a separate session, so `screenshot` c
 - **Deck Game Mode:** ask the user to press Steam + R1 when the problem is on screen, then `steam-shots` to find the file and scp it.
 - Pull Proton logs the same way: `scp deck:steam-<appid>.log <scratchpad>/`, or use `logs <game> --errors` remotely.
 
+## Clicking and typing on the Deck
+
+When a dialog needs a click (installer Continue, a launcher popup), drive it yourself instead of handing it to the user. Wine windows are X11 windows under XWayland, and `xdotool` ships with SteamOS:
+
+```bash
+ssh deck 'export DISPLAY=:0 XAUTHORITY=$(ls /run/user/1000/xauth_* | head -1)
+  xdotool search --onlyvisible --name "." | while read w; do echo "$w $(xdotool getwindowname $w) $(xdotool getwindowgeometry $w | tail -1)"; done'
+ssh deck 'export DISPLAY=:0 XAUTHORITY=$(ls /run/user/1000/xauth_* | head -1); xdotool key --window <id> Return'
+```
+
+- **Send keys to the window, don't click.** `xdotool key --window <id>` goes straight to that window. Mouse clicks (`mousemove ... click 1`) go through the compositor and often land on the window behind, even after `windowraise`/`windowactivate`. Enter presses a dialog's default button (Battle.net's install Continue, its "Scan For Games" Done). Tab moves between controls.
+- Screenshot after every action to confirm it landed.
+- Several windows can share a title; pick by size from the listing.
+- Logins stay with the user. Never type a password for them.
+
+## Desktop Mode input loss
+
+While a non-Steam Proton app runs in Deck Desktop Mode, the user's trackpads **and** touchscreen can stop working entirely (seen with the Battle.net installer). Holding ☰ doesn't fix it. Holding the Steam button while using the right trackpad gives mouse control back (reported by a user, not confirmed to fix every case). Work around it rather than fighting it:
+
+- Drive dialogs with `xdotool key --window` (above).
+- Have the user log in and play in **Game Mode**, where touch, trackpads and the on-screen keyboard behave normally.
+
 ## Restarting Steam remotely
 
+- SteamOS kills every process started from an SSH session when the connection closes, even `setsid`/`nohup` ones. steamctl handles this: over SSH it starts Steam and `steam://` launches through `systemd-run --user`, with session variables (`XAUTHORITY` included) copied from the running desktop. If you start a GUI program by hand over SSH, do the same, or it dies when your command returns.
+- `wayland init failed` and `XOpenIM() failed` in Steam's console log are normal on the Deck. They aren't the cause of anything.
 - Deck Desktop Mode: edits work and Steam reopens on the Deck's screen.
 - Deck Game Mode: steamctl refuses to edit, because closing Steam would end the session. Ask the user to switch to Desktop Mode, or walk them through the change in the Steam UI.
 - Windows: Steam started from SSH may not appear on the desktop. After editing, ask the user to start Steam themselves, or use `--no-restart` with Steam closed on their side.
