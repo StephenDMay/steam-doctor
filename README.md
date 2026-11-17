@@ -4,8 +4,6 @@ A Claude Code plugin that gets games running through Steam on Linux (Proton), St
 
 ## Install
 
-The repo is private, so the machine needs a GitHub credential first (`gh auth login`, then `gh auth setup-git`).
-
 In Claude Code:
 
 ```
@@ -34,3 +32,11 @@ python3 skills/steam-doctor/scripts/steamctl.py --help
 `info`, `list`, `show`, `tools`, `set-proton`, `set-launch`, `add`, `remove`, `run`, `logs`, `screenshot`, `steam-shots`, `reset-prefix`, `tricks`, `get-ge`, `steam start|stop|restart`.
 
 Edits close Steam, back up the config file (`*.steamctl-bak-<time>`), then reopen Steam.
+
+## Status and feedback
+
+Tested on Arch Linux (Hyprland). Steam Deck and Windows support is written but not yet tested on real hardware. If something breaks, or a fix worked for a game, please open an issue with the output of `steamctl info` and the game's name.
+
+## License
+
+MIT
