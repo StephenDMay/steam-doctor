@@ -30,6 +30,15 @@ Goal: the user names a game (or a problem), and you get it running with as littl
 | `get-ge [--version TAG]` | Download and checksum-verify GE-Proton into `compatibilitytools.d` |
 | `steam status\|stop\|start\|restart` | Control the Steam client |
 
+## Where you're running
+
+Run `steamctl info` first. Its `platform` field (`linux`, `steamdeck`, `windows`) tells you which playbook applies. All three are first-class: run steamctl locally on whatever machine Claude Code is on.
+
+- **Linux desktop:** `python3 <base>/scripts/steamctl.py ...`
+- **Steam Deck, natively:** Claude Code runs in Desktop Mode (Konsole). `python3` is built into SteamOS, and the `steam` command and Steam paths are found on their own. Everything you install goes in the home folder (Flatpak `--user`, `~/.local/bin`), because the system is read-only. If Claude Code was started from Game Mode (Konsole added as a non-Steam app), steamctl refuses to close Steam. Closing Steam would kill this session too.
+- **Windows, natively:** the Bash tool is Git Bash. Run `python <base>/scripts/steamctl.py ...` (or `py`). If `python` opens the Microsoft Store or isn't found, ask the user to run `winget install -e --id Python.Python.3.12` and restart Claude Code. steamctl finds Steam through the registry, and Proton-only commands (`set-proton`, `tricks`, `get-ge`) tell you they don't apply.
+- **Another machine:** over SSH, see the last section.
+
 `<game>` is an appid or part of the name. Editing commands close Steam, back the file up as `<file>.steamctl-bak-<time>`, and reopen Steam. Steam rewrites its config while running, so never hand-edit `config.vdf`, `localconfig.vdf` or `shortcuts.vdf` while it's up. Use steamctl.
 
 ## Workflow

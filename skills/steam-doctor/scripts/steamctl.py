@@ -751,6 +751,10 @@ def cmd_steam(steam, a):
 
 
 def main():
+    # Windows consoles default to a legacy codepage; game names with em dashes etc. would crash print()
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     p = argparse.ArgumentParser(prog="steamctl", description=__doc__.split("\n")[0])
     sub = p.add_subparsers(dest="cmd", required=True)
 
