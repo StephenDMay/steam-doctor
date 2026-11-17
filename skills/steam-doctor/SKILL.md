@@ -20,6 +20,7 @@ Goal: the user names a game (or a problem), and you get it running with as littl
 | `set-proton <game> <tool\|none>` | Force a Proton version (Linux only) |
 | `set-launch <game> "<opts>"` | Set launch options (`""` clears) |
 | `add <exe> [--name N] [--proton T] [--launch L] [--start-dir D]` | Add a non-Steam game |
+| `edit-shortcut <game> [--exe E] [--name N] [--start-dir D]` | Repoint a shortcut (installer → installed launcher) and keep its prefix |
 | `remove <game>` | Remove a non-Steam shortcut |
 | `run <game>` | Launch through Steam (starts Steam if needed) |
 | `logs <game> [--errors] [--lines N]` | Proton log (`~/steam-<appid>.log`) plus Steam log lines about the game |

@@ -423,7 +423,10 @@ class SteamClosed:
 
 def backup(path):
     if os.path.exists(path):
-        dst = f"{path}.steamctl-bak-{time.strftime('%Y%m%d-%H%M%S')}"
+        base = f"{path}.steamctl-bak-{time.strftime('%Y%m%d-%H%M%S')}"
+        dst, n = base, 1
+        while os.path.exists(dst):  # several edits in one second must not overwrite the first backup
+            dst, n = f"{base}-{n}", n + 1
         shutil.copy2(path, dst)
         print(f"backup: {dst}")
 
@@ -573,6 +576,25 @@ def cmd_add(steam, a):
     print(f"added {name} as non-Steam game, appid {appid}"
           + (f", compat tool {a.proton}" if a.proton and not IS_WIN else ""))
     print(f"its Proton prefix will be: {os.path.join(steam.root, 'steamapps', 'compatdata', str(appid))}")
+
+
+def cmd_edit_shortcut(steam, a):
+    """Repoint a shortcut. Steam keys the prefix on the stored appid, so the prefix survives."""
+    g = steam.find(a.game)
+    if g["kind"] != "shortcut":
+        die("only non-Steam shortcuts can be edited here")
+    with SteamClosed(steam, not a.no_restart):
+        data = steam.load_shortcuts()
+        s = data["shortcuts"][g["index"]]
+        if a.exe:
+            s["Exe"] = f'"{a.exe}"'
+            s["StartDir"] = f'"{a.start_dir or os.path.dirname(a.exe)}"'
+        elif a.start_dir:
+            s["StartDir"] = f'"{a.start_dir}"'
+        if a.name:
+            s["AppName"] = a.name
+        write_shortcuts(steam, data)
+    print(f"{g['appid']}: name={s['AppName']!r} exe={s.get('Exe')} startdir={s.get('StartDir')}")
 
 
 def cmd_remove(steam, a):
@@ -778,6 +800,8 @@ def main():
     add("set-launch", cmd_set_launch, "set launch options ('' to clear)", G, (["options"], {}), edits=True)
     add("add", cmd_add, "add a non-Steam game", (["exe"], {}), (["--name"], {}), (["--start-dir"], {}),
         (["--launch"], {"help": "launch options"}), (["--proton"], {"help": "compat tool to force"}), edits=True)
+    add("edit-shortcut", cmd_edit_shortcut, "change a shortcut's exe/name/start dir, keeping its prefix", G,
+        (["--exe"], {}), (["--name"], {}), (["--start-dir"], {}), edits=True)
     add("remove", cmd_remove, "remove a non-Steam shortcut", G, edits=True)
     add("run", cmd_run, "launch a game through Steam", G)
     add("logs", cmd_logs, "show Proton and Steam logs for a game", G,
