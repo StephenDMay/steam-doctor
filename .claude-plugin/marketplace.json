@@ -1,0 +1,5 @@
+{
+  "name": "steam-doctor",
+  "owner": { "name": "StephenDMay" },
+  "plugins": [{ "name": "steam-doctor", "source": "./", "description": "Get games running through Steam on Linux, Steam Deck and Windows." }]
+}
