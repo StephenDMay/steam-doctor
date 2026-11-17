@@ -56,6 +56,7 @@ If protontricks isn't installed, Flatpak works everywhere, including Deck: `flat
 
 - **Add the installer first, then the launcher.** `add Setup.exe --proton proton_experimental`, run it, install. Then point the shortcut at the installed exe inside its prefix (`<steam>/steamapps/compatdata/<appid>/pfx/drive_c/...`). Use `edit-shortcut <installer> --exe <installed launcher> --name <Name>`: the shortcut keeps its appid, so it keeps the prefix with the install in it. Do **not** `remove` + `add`, because a new shortcut gets a new appid and an empty prefix. Make sure a Proton version is forced on it (`set-proton`).
 - Never wrap system `wine` in a Steam shortcut. Steam injects its overlay and runtime libraries (`LD_PRELOAD`, `LD_LIBRARY_PATH`), and Chromium-based launchers crash on them. Use Proton, or a wrapper script that unsets those first.
+- **Steam says "Running" after the launcher is closed:** the launcher left a background process behind (Battle.net's `Agent.exe`, EA's `EABackgroundService`). Check with `pgrep -af '\.exe'`. Once the user has quit, end the prefix cleanly: `WINEPREFIX=<compatdata>/<appid>/pfx "<Proton dir>/files/bin/wineserver" -k`.
 - Launchers that run games inside their own prefix (Battle.net, EA app, Ubisoft): the games inherit the launcher's Proton and prefix. Fix the launcher's shortcut, not the game.
 - Alternatives worth naming when Steam is the wrong tool: Heroic (Epic, GOG, Amazon), Lutris (install scripts for Battle.net and others). Both work on the Deck through Flatpak.
 
