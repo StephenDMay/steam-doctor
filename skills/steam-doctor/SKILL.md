@@ -26,6 +26,7 @@ Goal: the user names a game (or a problem), and you get it running with as littl
 | `logs <game> [--errors] [--lines N]` | Proton log (`~/steam-<appid>.log`) plus Steam log lines about the game |
 | `screenshot [--out PATH]` | Screenshot the desktop and print the path, then Read it to see the screen |
 | `steam-shots` | Newest screenshots taken with Steam's own key (works in Deck Game Mode) |
+| `stop-game <game>` | End everything in the game's Proton prefix, including launcher agents that keep Steam showing "Running" |
 | `reset-prefix <game>` | Move the game's Proton prefix to a timestamped backup |
 | `tricks <game> <verbs...>` | protontricks in the game's prefix (`vcrun2022`, `d3dcompiler_47`, `dotnet48`...) |
 | `get-ge [--version TAG]` | Download and checksum-verify GE-Proton into `compatibilitytools.d` |
@@ -58,7 +59,7 @@ If the user says "on my Deck" or names another PC, run everything over SSH. stea
 
 ## Rules
 
-- **Say before you close Steam.** Edits restart the Steam client. If a game is running (check `steamctl steam status` and ask), warn first. Downloads pause and resume on their own.
+- **Say before you close Steam.** Edits restart the Steam client. If a game is running (`steamctl show <game>` has a `running` field), warn first. Never detect a game with `pgrep -f <appid>`: it matches your own shell's command line. Downloads pause and resume on their own.
 - **Steam Deck Game Mode:** steamctl refuses to close Steam there, because Steam is the whole session. Ask the user to switch to Desktop Mode (Steam button, Power, Switch to Desktop), or give them the exact in-Steam clicks instead.
 - **Prefixes hold saves.** Some games keep saves inside the prefix. `reset-prefix` keeps a backup, but tell the user before running it, and never delete a `.bak` prefix yourself.
 - **Don't fight launchers' own updaters.** Battle.net, EA app and similar update themselves inside the prefix. Let them finish before judging a crash.

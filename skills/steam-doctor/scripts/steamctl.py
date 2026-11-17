@@ -451,6 +451,25 @@ def proton_log_path(appid):
     return os.path.join(os.environ.get("PROTON_LOG_DIR", HOME), f"steam-{appid}.log")
 
 
+def prefix_processes(g):
+    """(pid, exe) of processes running inside this game's Proton prefix, found via WINEPREFIX in /proc.
+    Matching on the environment, not the command line, so leftover agents count and we never match ourselves."""
+    if IS_WIN or not g.get("compatdata"):
+        return []
+    want = os.path.realpath(os.path.join(g["compatdata"], "pfx"))
+    hits = []
+    for pid in filter(str.isdigit, os.listdir("/proc")):
+        try:
+            with open(f"/proc/{pid}/environ", "rb") as f:
+                env = f.read().split(b"\0")
+            pfx = next((e[11:].decode(errors="replace") for e in env if e.startswith(b"WINEPREFIX=")), None)
+            if pfx and os.path.realpath(pfx) == want:
+                hits.append((int(pid), os.readlink(f"/proc/{pid}/exe")))
+        except (OSError, StopIteration):
+            continue
+    return hits
+
+
 def describe(steam, g, mapping):
     m = mapping.get(str(g["appid"])) or {}
     ver_file = os.path.join(g.get("compatdata", ""), "version")
@@ -461,6 +480,7 @@ def describe(steam, g, mapping):
         "launch_options": steam.launch_options(g),
         "prefix": g["compatdata"] if os.path.isdir(g.get("compatdata", "")) else None,
         "prefix_proton_version": used,
+        "running": bool(prefix_processes(g)) if not IS_WIN else None,
         **({"exe": g.get("exe"), "startdir": g.get("startdir")} if g["kind"] == "shortcut" else
            {"installdir": g.get("installdir")}),
     }
@@ -695,6 +715,34 @@ def cmd_steam_shots(steam, a):
         print("no Steam screenshots yet (Steam button + R1 on Deck, F12 on PC)")
 
 
+def cmd_stop_game(steam, a):
+    """End everything in a game's prefix, e.g. launcher agents that keep Steam showing 'Running'."""
+    if IS_WIN:
+        die("stop-game is for Proton prefixes; on Windows end the process in Task Manager")
+    g = steam.find(a.game)
+    procs = prefix_processes(g)
+    if not procs:
+        print(f"{g['name']}: nothing running in its prefix")
+        return
+    ws = next((exe for _, exe in procs if os.path.basename(exe) == "wineserver"), None)
+    print(f"{g['name']}: {len(procs)} processes in prefix; ending them")
+    if ws:
+        env = dict(os.environ, WINEPREFIX=os.path.join(g["compatdata"], "pfx"))
+        subprocess.run([ws, "-k"], env=env)
+    for _ in range(15):
+        time.sleep(1)
+        if not prefix_processes(g):
+            print("stopped")
+            return
+    import signal
+    for pid, _ in prefix_processes(g):
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except OSError:
+            pass
+    print("stopped (forced)")
+
+
 def cmd_reset_prefix(steam, a):
     g = steam.find(a.game)
     pfx = g["compatdata"]
@@ -809,6 +857,7 @@ def main():
         (["--lines"], {"type": int, "default": 80}))
     add("screenshot", cmd_screenshot, "screenshot the desktop, print the file path", (["--out"], {}))
     add("steam-shots", cmd_steam_shots, "list recent Steam-key screenshots", (["--count"], {"type": int, "default": 5}))
+    add("stop-game", cmd_stop_game, "end every process in a game's Proton prefix (lingering launcher agents)", G)
     add("reset-prefix", cmd_reset_prefix, "back up and drop a game's Proton prefix", G)
     add("tricks", cmd_tricks, "run protontricks verbs in a game's prefix", G, (["verbs"], {"nargs": "+"}))
     add("get-ge", cmd_get_ge, "download GE-Proton (latest, or --version TAG)", (["--version"], {}))
