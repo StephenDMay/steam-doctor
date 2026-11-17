@@ -1,6 +1,6 @@
 {
   "name": "steam-doctor",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Get games running through Steam on Linux (Proton), Steam Deck and Windows, locally or over SSH.",
   "author": {
     "name": "StephenDMay"
